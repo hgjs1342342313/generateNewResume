@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "简历数据结构",
+  "type": "object",
+  "required": ["personal", "education", "experience"],
+  "properties": {
+    "personal": {
+      "type": "object",
+      "title": "个人信息",
+      "required": ["name", "email", "phone"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "姓名",
+          "description": "中文姓名"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "title": "邮箱"
+        },
+        "phone": {
+          "type": "string",
+          "title": "电话",
+          "description": "电话号码，可包含微信说明"
+        },
+        "avatar": {
+          "type": "string",
+          "title": "头像路径",
+          "description": "可选，头像图片路径"
+        }
+      }
+    },
+    "education": {
+      "type": "array",
+      "title": "教育背景",
+      "items": {
+        "type": "object",
+        "required": ["school", "location", "period", "degree", "major"],
+        "properties": {
+          "school": {
+            "type": "string",
+            "title": "学校名称"
+          },
+          "location": {
+            "type": "string",
+            "title": "地点"
+          },
+          "period": {
+            "type": "string",
+            "title": "时间段",
+            "description": "格式：YYYY.M -- YYYY.M"
+          },
+          "degree": {
+            "type": "string",
+            "title": "学位",
+            "enum": ["学士", "硕士", "博士", "本科", "研究生", "博士生"]
+          },
+          "major": {
+            "type": "string",
+            "title": "专业"
+          }
+        }
+      }
+    },
+    "experience": {
+      "type": "array",
+      "title": "工作经历",
+      "items": {
+        "type": "object",
+        "required": ["company", "department", "period", "role"],
+        "properties": {
+          "company": {
+            "type": "string",
+            "title": "公司名称"
+          },
+          "department": {
+            "type": "string",
+            "title": "部门"
+          },
+          "period": {
+            "type": "string",
+            "title": "时间段"
+          },
+          "role": {
+            "type": "string",
+            "title": "职位"
+          },
+          "responsibilities": {
+            "type": "string",
+            "title": "核心职责",
+            "description": "主要工作内容概述"
+          },
+          "projects": {
+            "type": "array",
+            "title": "项目/工作详情",
+            "items": {
+              "type": "object",
+              "required": ["title", "challenge", "achievements"],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "title": "项目标题"
+                },
+                "icon": {
+                  "type": "string",
+                  "title": "图标",
+                  "description": "FontAwesome 图标名称，如 faShield"
+                },
+                "challenge": {
+                  "type": "string",
+                  "title": "挑战/背景"
+                },
+                "achievements": {
+                  "type": "array",
+                  "title": "成果",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "title": "技能",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

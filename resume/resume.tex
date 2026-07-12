@@ -1,0 +1,121 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+% !Mode:: "TeX:UTF-8"
+
+\documentclass{resume}
+\usepackage{zh_CN-Adobefonts_external} % Simplified Chinese Support using external fonts (./fonts/zh_CN-Adobe/)
+%\usepackage{zh_CN-Adobefonts_internal} % Simplified Chinese Support using system fonts
+\usepackage{linespacing_fix} % disable extra space before next section
+\usepackage{cite}
+\begin{document}
+% \pagenumbering{gobble} % suppress displaying page number
+
+% \name{康哲鸣}
+
+% \basicInfo{
+%   \email{zheming4work@outlook.com} \textperiodcentered\ 
+%   \phone{(+86) 17640091901} \textperiodcentered\ 
+%   }
+ 
+% \section{\faGraduationCap\  教育背景}
+% \datedsubsection{\textbf{香港大学}, 中国香港}{2023 -- 至今}
+% \textit{硕士}\ 计算机科学, 预计 2025 年 7 月毕业
+% \datedsubsection{\textbf{大连理工大学}， 大连}{2019 -- 2023}
+% \textit{学士}\ 网络工程
+\pagenumbering{gobble} % suppress displaying page number
+
+\begin{minipage}{0.38\textwidth}
+  \centering
+  \Huge\textbf{Zheming Kang}
+
+  \vspace{0.5em}
+
+  \normalsize
+\basicInfo{
+  \begin{tabular}[t]{@{}l@{}}
+    \email{zheming4work@outlook.com} \\
+    \phone{(+86) 17640091901}
+  \end{tabular}
+}
+\end{minipage}%
+\begin{minipage}{0.62\textwidth}
+  \raggedright
+  \section{\faGraduationCap\ Education}
+  \datedsubsection{\textbf{The University of Hong Kong}, HKSAR}{2023.9 -- present}
+  \textit{Master of Science}\ in Computer Science
+  \datedsubsection{\textbf{Dalian University of Technology}， Dalian}{2019.9 -- 2023.6}
+  \textit{Bachelor}\ Cyber Engineering
+\end{minipage}
+
+\section{\faUsers\ Experience}
+\datedsubsection{\textbf{Alibaba-Cloud}\ Hangzhou}{2024.6 -- 2024.9}
+\role{Intern}{Infrastructure Unit-Elastic Computing}
+Background: There are two parts completed in the Alibaba Cloud internship: the development and quality assurance parts. The development part mainly involved upgrading the functions of the CI/CD platform, mainly using Golang to complete Web backend development and React to complete some front-end page changes. The QA part mainly involved the acceptance of ACS products, where ACS is a cloud computing service that uses Kubernetes as the user interface to provide container computing resources, providing computing resources that meet container specifications.
+\begin{onehalfspacing}
+\subsection{\textbf{CI/CD Platform Authentication Control Module Upgrade}}
+\role{Golang, Gin-Middleware, RBAC}
+
+Overview: Upgraded the CI/CD Platform authentication control module from ACL pattern to RBAC. Solved the problem of high coupling between business code and authentication logic. Improved human efficiency by 30\%.
+\begin{itemize}
+  \item Decoupled 6 backend interfaces and optimized 4 existing unauthenticated interfaces.
+  \item Adopt the grayscale release principle to ensure that version updates can be grayscale, rollback, and non-stop. A total of 4 versions have been released, and there have been no problems so far.
+  \item Use RBAC mode to ensure the scalability of the system. Adding new roles to the production environment takes less time and is more efficient.
+  \item Implemented a cache module based on Go-Cache, which increased the access speed on the same machine by 5 times.
+\end{itemize}
+
+\subsection{\textbf{Quality Assurance for Alibaba-Cloud ACS product}}
+Overview: Participated in the quality acceptance of the product's heterogeneous links, regional service launch, version upgrades, and user documentation consistency.
+\begin{itemize}
+  \item QA for heterogeneous links: Assist in adapting k8s community conformance cases on the GPU chain. Helped adjust over 60 cases.
+  \item QA for regional service launch: Assisted in launching ACS products in 8 new regions. Performed regression testing based on CI/CD platform and found 6 configuration issues.
+  \item QA for version upgrades: Assisted in the functional acceptance of ACS version 1.30 and found 1 function-missing issue.
+  \item QA for user documentation consistency: Assisted in organizing the user manual usage scenarios and actual acceptance test cases. Added 3 acceptance cases and found 1 document non-compliance issue.
+\end{itemize}
+
+\end{onehalfspacing}
+
+
+\section{\faTerminal\ Project}
+\datedsubsection{\textbf{Real-time heart rate detection system based on face information}}{2023.9-2023.12}
+\role{Python, Esp-32 Camera, AWS}{https://github.com/HKU-COMP7310-HeartRateDetection}
+\begin{onehalfspacing}
+Project background: To realize a low-cost heart rate detection system to help users monitor their health, this system was designed, implemented, and delivered. Using the ESP32 development board and Windows client application, users can understand their real-time heart rate values and changes, and adjust the camera equipment.
+
+Responsible for implementing the background transmission module and desktop graphical application module in the system.
+\begin{itemize}
+  \item Built an MQTT server based on AWS IoT Python SDK and Amazon EC2 cloud server. Transmitted user commands, real-time camera video, and user heart rate images through the MQTT protocol.
+  \item Achieved remote device control within seconds and low-latency acquisition of user images and heart rate. Mastered certain desktop application development skills and software development delivery processes, and obtained a Top10\% rating.
+\end{itemize}
+\end{onehalfspacing}
+
+% Reference Test
+%\datedsubsection{\textbf{Paper Title\cite{zaharia2012resilient}}}{May. 2015}
+%An xxx optimized for xxx\cite{verma2015large}
+%\begin{itemize}
+%  \item main contribution
+%\end{itemize}
+
+\section{\faCogs\ Skills}
+% increase linespacing [parsep=0.5ex]
+\begin{itemize}[parsep=0.5ex]
+  % \item 熟悉Java基础，熟悉Android基础；熟悉MySQL数据库，了解事务、索引机制；了解SpringBoot的开发流程；熟悉版本控制工具Git和项目构建和管理工具Maven；了解linux基础命令；了解MongoDB；了解PySimpleGUI框架, AWS python MQTT组件，AWS MQTT测试客户端
+  \item Familiar with Go and Python. Understand the Middleware of Gin framework.
+  \item Familiar with inter-process communication in Linux environment; familiar with common thread synchronization and mutual exclusion methods.
+  \item Familiar with TCP/UDP, HTTP and other protocols, and understand HTTPS protocol.
+  \item Familiar with MySQL relational database.
+\end{itemize}
+
+\section{\faHeartO\ Awards}
+\datedline{\textit{}Dalian University of Technology Scholarship for outstanding study}{2022.10}
+\datedline{\textit{Third Prize}, University of California, Riverside Programming Challenge}{2022.9}
+% \datedline{\textit{二等奖}, 第十一届MathorCup高校数学建模挑战赛}{2022 年6 月}
+% \datedline{\textit{三等奖}, 全国大学生人工智能知识竞赛}{2021 年6 月}
+% \datedline{\textit{优秀志愿者}, 全国大学生人工智能知识竞赛}{2021 年6 月}
+
+
+
+%% Reference
+%\newpage
+%\bibliographystyle{IEEETran}
+%\bibliography{mycite}
+\end{document}

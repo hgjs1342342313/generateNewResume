@@ -1,0 +1,151 @@
+name: 编译简历 PDF
+
+on:
+  push:
+    paths:
+      - 'pending/*.json'
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      resume_json:
+        description: '简历 JSON 数据（可选，留空则使用 pending/ 目录下的最新文件）'
+        required: false
+        default: ''
+
+jobs:
+  build-resume:
+    runs-on: ubuntu-latest
+    container:
+      image: xucheng/texlive-full:latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: |
+          pip install -q pyyaml
+
+      - name: 查找待处理的简历文件
+        id: find-resume
+        run: |
+          if [ -n "${{ github.event.inputs.resume_json }}" ]; then
+            # 使用手动输入的 JSON
+            echo '${{ github.event.inputs.resume_json }}' > /tmp/resume_input.json
+            echo "resume_file=/tmp/resume_input.json" >> $GITHUB_OUTPUT
+          else
+            # 查找 pending 目录下最新的 JSON 文件
+            LATEST=$(ls -t pending/*.json 2>/dev/null | head -n1)
+            if [ -z "$LATEST" ]; then
+              echo "❌ 未找到待处理的简历文件"
+              exit 1
+            fi
+            echo "resume_file=$LATEST" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 生成 LaTeX 文件
+        id: generate
+        run: |
+          RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
+          echo "📄 处理文件: $RESUME_FILE"
+          
+          # 提取姓名用于文件命名
+          NAME=$(python3 -c "import json; print(json.load(open('$RESUME_FILE'))['personal']['name'])" 2>/dev/null || echo "resume")
+          SAFE_NAME=$(echo "$NAME" | sed 's/[^a-zA-Z0-9\u4e00-\u9fa5]/_/g')
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          
+          OUTPUT_NAME="resume_${SAFE_NAME}_${TIMESTAMP}"
+          echo "output_name=$OUTPUT_NAME" >> $GITHUB_OUTPUT
+          
+          # 生成 LaTeX 文件
+          python3 scripts/generate_resume.py "$RESUME_FILE" --output-dir output --template-dir resume
+          
+          # 重命名输出文件
+          mv output/*.tex output/${OUTPUT_NAME}.tex
+          
+          echo "✅ LaTeX 文件已生成: output/${OUTPUT_NAME}.tex"
+
+      - name: 编译 LaTeX 为 PDF
+        id: compile
+        run: |
+          OUTPUT_NAME="${{ steps.generate.outputs.output_name }}"
+          cd output
+          
+          # 复制 resume 模板文件到当前目录
+          cp -r ../resume/* .
+          
+          # 编译 LaTeX（运行两次以确保引用正确）
+          echo "🔨 第一次编译..."
+          xelatex -interaction=nonstopmode ${OUTPUT_NAME}.tex || true
+          
+          echo "🔨 第二次编译..."
+          xelatex -interaction=nonstopmode ${OUTPUT_NAME}.tex
+          
+          # 检查 PDF 是否生成
+          if [ ! -f "${OUTPUT_NAME}.pdf" ]; then
+            echo "❌ PDF 生成失败"
+            cat ${OUTPUT_NAME}.log
+            exit 1
+          fi
+          
+          echo "✅ PDF 生成成功: ${OUTPUT_NAME}.pdf"
+          echo "pdf_file=${OUTPUT_NAME}.pdf" >> $GITHUB_STEP_SUMMARY
+
+      - name: 上传 PDF Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resume-pdf
+          path: output/*.pdf
+          retention-days: 30
+
+      - name: 上传 LaTeX 源文件 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resume-tex
+          path: |
+            output/*.tex
+            resume/
+          retention-days: 30
+
+      - name: 移动已处理的文件
+        if: github.event.inputs.resume_json == ''
+        run: |
+          RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
+          if [ -f "$RESUME_FILE" ]; then
+            mkdir -p processed
+            mv "$RESUME_FILE" processed/
+            echo "✅ 已将 $RESUME_FILE 移动到 processed/ 目录"
+          fi
+
+      - name: 提交处理结果
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 提交移动的文件
+          if [ -d "processed" ]; then
+            git add processed/ pending/ 2>/dev/null || true
+            git diff --staged --quiet || git commit -m "chore: 移动已处理的简历文件到 processed/"
+          fi
+          
+          git push || true
+
+      - name: 生成摘要
+        run: |
+          OUTPUT_NAME="${{ steps.generate.outputs.output_name }}"
+          echo "## 📄 简历编译完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **输出文件**: \`${OUTPUT_NAME}.pdf\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **下载方式**: 在 Actions 页面下载 \`resume-pdf\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 下载链接" >> $GITHUB_STEP_SUMMARY
+          echo "在当前 workflow 运行完成后，点击下方的 **Artifacts** 区域下载生成的 PDF 文件。" >> $GITHUB_STEP_SUMMARY

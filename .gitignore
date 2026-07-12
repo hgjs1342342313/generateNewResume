@@ -1,0 +1,48 @@
+# LaTeX 编译产物
+*.aux
+*.log
+*.bbl
+*.blg
+*.synctex.gz
+*.out
+*.toc
+*.lof
+*.idx
+*.ilg
+*.ind
+*.fls
+*.fdb_latexmk
+*.xdy
+*.dvi
+*.ps
+
+# 输出目录
+output/
+pending/
+processed/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+
+# 前端配置（包含敏感信息）
+web/config.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.bak

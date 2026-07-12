@@ -1,0 +1,93 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+% !Mode:: "TeX:UTF-8"
+
+\documentclass{resume}
+\usepackage{zh_CN-Adobefonts_external}
+%\usepackage{zh_CN-Adobefonts_internal}
+\usepackage{amssymb}
+
+\usepackage{linespacing_fix}
+\usepackage{cite}
+\usepackage{fontawesome}
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{minipage}{0.38\textwidth}
+  \centering
+  \Huge\textbf{康哲鸣}
+
+  \vspace{0.5em}
+
+  \normalsize
+  \basicInfo{
+    \begin{tabular}[t]{@{}l@{}}
+      \email{zheming4work@outlook.com} \\
+      \phone{(+86) 17640091901（微信可搜）}
+    \end{tabular}
+  }
+\end{minipage}%
+\begin{minipage}{0.62\textwidth}
+  \raggedright
+  \section{\faGraduationCap\ 教育背景}
+  \datedsubsection{\textbf{香港大学}, 中国香港}{2023.9 -- 2025.6}
+  \textit{硕士}\ 计算机科学
+  \datedsubsection{\textbf{大连理工大学}， 大连}{2019.9 -- 2023.6}
+  \textit{学士}\ 网络工程
+\end{minipage}
+
+\section{\Large \faUsers\ 工作经历}
+\datedsubsection{\textbf{哔哩哔哩} \space {基础架构部 - 容器平台}}{2025.6 -- 至今}
+ \role{开发工程师->高级开发工程师}
+ 
+\vspace{5pt}
+
+\subsection{\Large \faBullseye\ \textbf{核心职责}}
+主要负责在自建 IDC 机房与公有云环境下，保障流量生态（搜推）及商业化（广告与交易）业务稳定性，支撑业务迭代优化。具体包括资源合池、调度优化、算力归一、环境标准化、监控体系完善、流量生态上云，以及日常运维等工作。
+\vspace{5pt}
+\begin{onehalfspacing}
+\subsection{\large \faShield \textbf{稳定性相关工作}}
+\subsection{\textbf{$\blacktriangleright$ 流量生态核心服务稳定性保障}}
+\textbf{挑战：} 在流量生态合池的环境下，多种服务互相之间存在资源争抢、互相干扰的现象。流量生态核心服务落地的过程中，如何保证其服务的高可用性、降低耗时分层是一项重大挑战。
+\begin{itemize}
+  \item 设计并实现了基于实际资源开销的服务画像系统。通过\textbf{采集服务晚高峰实际}的内存带宽、网络带宽等资源的使用情况，来描绘画像。
+  \item 通过\textbf{画像系统}为调度层提供调度的数据依赖。通过保障服务调度时满足节点的画像资源限制来保障服务的可用性。
+  \item 在流量生态核心服务落地过程中，将其耗时分层从\textbf{ 50ms }降低至\textbf{ 30ms }（超时限制为150ms）；粗排场景下，KPI从\textbf{98\%} 提升至\textbf{99.6\%}
+\end{itemize}
+\subsection{\textbf{$\blacktriangleright$ 环境一致性推进}}
+\textbf{挑战：} 公司在发展的过程中，由于发展历史较长，自动化交付流程不够完善，导致基础平台所承接的部门的服务器环境配置不一，对线上故障排查带来阻塞，且会降低业务自身的可用性。
+\begin{itemize}
+  \item 根据实际生产环境下收集整理的服务器基准环境配置，整理了基础平台服务器所需的环境基线。并与系统部合作，将机器\textbf{交付的过程}使用基线保障服务器环境一致性。
+  \item 解决了由于\textbf{基础环境缺失或配置不合适}导致的服务kpi下跌问题；\textbf{统一}了商业化与流量生态的部门基线，在不使用特定组件的情况下，双方可以\textbf{互相借用}对方服务器。
+\end{itemize}
+
+\vspace{5pt}
+\subsection{\large \faEye \textbf{监控与可观测相关工作}}
+\subsection{\textbf{$\blacktriangleright$ 流量生态合池稳定性观测大盘}}
+\textbf{背景：} 过往流量生态服务的整体稳定性观测来自于\textbf{分散在各种面板}的服务监控与业务自建监控。这导致无法很好地\textbf{总览}流量生态服务状态。通过推进稳定性观测大盘状态，不仅能够提升目前集群内的状态掌控能力，还可以复用promql来实现异常情况告警，进而执行相关自愈流程。
+\begin{itemize}
+  \item 通过集群维度进行数据筛选，通过安全阈值进行数据剪枝，交付了能够观测流量生态集群内\textbf{全部服务}状态的稳定性运营大盘。
+  \item 与业务合作，在大盘中集成了cpu分层与rtt分层的利用率，并为业务同学配置了\textbf{告警管理}，便于其后续接入自动处置流程。
+  \item 大盘包括：节点与物理机维度的cpu、内存、内存带宽、网卡的利用率；服务cpu分层、rtt分层；集群中，各种资源使用情况存在风险的节点数量等
+\end{itemize}
+
+\subsection{\textbf{$\blacktriangleright$ 平台基础监控能力完善}}
+\textbf{挑战：} 公司存在一些服务使用主机（host）网络模式，而非macvlan模式进行网络通信。这导致了公司的cadvisor组件在采集主机网络模式的pod的网络带宽时，采集的是物理机的实际网卡指标。该项目的挑战在于\textbf{如何复用}现有的监控面板，在\textbf{业务无感}的情况下对host模式的监控进行修正、以及如何对不同的网络包进行打标而不冲突。
+\begin{itemize}
+  \item 与系统部合作，通过对方提供的ebpf工具，与对\textbf{cadvisor}进行二次开发，修改 cgroup 目录的配置并加密解密，实现了主机网络模式的网络带宽正确采集。
+  \item 通过\textbf{覆盖}原有监控采集逻辑的方式，在组件housekeeping的过程中新增采集器，实现了host模式匹配成功时的采集信息替换。
+\end{itemize}
+\end{onehalfspacing}
+
+\section{\faCogs\ 技能}
+\begin{itemize}[parsep=0.5ex]
+  \item 了解 Go、Python，具备云原生平台开发与容器平台治理经验
+  \item 了解 Kubernetes、调度、资源隔离、NUMA、资源合池、带宽治理等相关技术
+  \item 了解 Linux 网络与性能监控，了解 \texttt{cadvisor}、Grafana 等可观测性组件
+\end{itemize}
+
+%% Reference
+%\newpage
+%\bibliographystyle{IEEETran}
+%\bibliography{mycite}
+\end{document}
