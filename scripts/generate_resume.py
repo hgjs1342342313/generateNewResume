@@ -13,19 +13,20 @@ from datetime import datetime
 
 def escape_latex(text: str) -> str:
     """转义 LaTeX 特殊字符"""
-    replacements = {
-        '&': r'\&',
-        '%': r'\%',
-        '$': r'\$',
-        '#': r'\#',
-        '_': r'\_',
-        '{': r'\{',
-        '}': r'\}',
-        '~': r'\textasciitilde{}',
-        '^': r'\^{}',
-        '\\': r'\textbackslash{}',
-    }
-    for old, new in replacements.items():
+    # 注意：反斜杠必须最先替换，否则新增的 \ 也会被转义
+    replacements = [
+        ('\\', r'\textbackslash{}'),  # 必须第一个
+        ('&', r'\&'),
+        ('%', r'\%'),
+        ('$', r'\$'),
+        ('#', r'\#'),
+        ('_', r'\_'),
+        ('{', r'\{'),
+        ('}', r'\}'),
+        ('~', r'\textasciitilde{}'),
+        ('^', r'\^{}'),
+    ]
+    for old, new in replacements:
         text = text.replace(old, new)
     return text
 
