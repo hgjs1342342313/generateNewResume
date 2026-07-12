@@ -138,27 +138,64 @@ def generate_resume_latex(data: dict, template_dir: str = "resume") -> str:
                 latex_lines.append('\\vspace{5pt}')
             
             # 项目/工作详情
-            if projects:
+            # 支持两种结构：project_groups（分组）或 projects（平铺）
+            project_groups = exp.get('project_groups', [])
+            projects = exp.get('projects', [])
+            
+            if project_groups or projects:
                 latex_lines.append('\\begin{onehalfspacing}')
                 
-                for proj in projects:
-                    title = proj.get('title', '')
-                    icon = proj.get('icon', 'faShield')
-                    challenge = proj.get('challenge', '')
-                    achievements = proj.get('achievements', [])
-                    
-                    latex_lines.append(
-                        f'\\subsection{{\\large \\{icon}\\ \\textbf{{{escape_latex(title)}}}}}'
-                    )
-                    
-                    if challenge:
-                        latex_lines.append(f'\\textbf{{挑战：}} {escape_latex(challenge)}')
-                    
-                    if achievements:
-                        latex_lines.append('\\begin{itemize}')
-                        for ach in achievements:
-                            latex_lines.append(f'  \\item {escape_latex(ach)}')
-                        latex_lines.append('\\end{itemize}')
+                # 分组结构（如：稳定性相关工作、监控与可观测相关工作）
+                if project_groups:
+                    for group in project_groups:
+                        group_title = group.get('group_title', '')
+                        group_icon = group.get('group_icon', 'faShield')
+                        group_projects = group.get('projects', [])
+                        
+                        if group_title:
+                            latex_lines.append(
+                                f'\\subsection{{\\Large \\{group_icon}\\ \\textbf{{{escape_latex(group_title)}}}}}'
+                            )
+                        
+                        for proj in group_projects:
+                            title = proj.get('title', '')
+                            icon = proj.get('icon', group_icon)
+                            challenge = proj.get('challenge', '')
+                            achievements = proj.get('achievements', [])
+                            
+                            latex_lines.append(
+                                f'\\subsection{{\\textbf{{\\$\\blacktriangleright\\$}} {escape_latex(title)}}}'
+                            )
+                            
+                            if challenge:
+                                latex_lines.append(f'\\textbf{{挑战：}} {escape_latex(challenge)}')
+                            
+                            if achievements:
+                                latex_lines.append('\\begin{itemize}')
+                                for ach in achievements:
+                                    latex_lines.append(f'  \\item {escape_latex(ach)}')
+                                latex_lines.append('\\end{itemize}')
+                
+                # 平铺结构（兼容旧格式）
+                elif projects:
+                    for proj in projects:
+                        title = proj.get('title', '')
+                        icon = proj.get('icon', 'faShield')
+                        challenge = proj.get('challenge', '')
+                        achievements = proj.get('achievements', [])
+                        
+                        latex_lines.append(
+                            f'\\subsection{{\\large \\{icon}\\ \\textbf{{{escape_latex(title)}}}}}'
+                        )
+                        
+                        if challenge:
+                            latex_lines.append(f'\\textbf{{挑战：}} {escape_latex(challenge)}')
+                        
+                        if achievements:
+                            latex_lines.append('\\begin{itemize}')
+                            for ach in achievements:
+                                latex_lines.append(f'  \\item {escape_latex(ach)}')
+                            latex_lines.append('\\end{itemize}')
                 
                 latex_lines.append('\\end{onehalfspacing}')
             

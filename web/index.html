@@ -1407,21 +1407,44 @@
             lines.push('\\vspace{5pt}');
           }
 
-          if (exp.projects && exp.projects.length) {
+          // 支持分组结构和平铺结构
+          const projectGroups = exp.project_groups || [];
+          const projects = exp.projects || [];
+
+          if (projectGroups.length || projects.length) {
             lines.push('\\begin{onehalfspacing}');
-            exp.projects.forEach(proj => {
-              lines.push(`\\subsection{\\large \\${proj.icon || 'faShield'}\\ \\textbf{${esc(proj.title)}}}`);
-              if (proj.challenge) {
-                lines.push(`\\textbf{挑战：} ${esc(proj.challenge)}`);
-              }
-              if (proj.achievements && proj.achievements.length) {
-                lines.push('\\begin{itemize}');
-                proj.achievements.forEach(ach => {
-                  lines.push(`  \\item ${esc(ach)}`);
+
+            if (projectGroups.length) {
+              projectGroups.forEach(group => {
+                if (group.group_title) {
+                  lines.push(`\\subsection{\\Large \\${group.group_icon || 'faShield'}\\ \\textbf{${esc(group.group_title)}}}`);
+                }
+                (group.projects || []).forEach(proj => {
+                  lines.push(`\\subsection{\\textbf{$\\blacktriangleright$} ${esc(proj.title)}}`);
+                  if (proj.challenge) {
+                    lines.push(`\\textbf{挑战：} ${esc(proj.challenge)}`);
+                  }
+                  if (proj.achievements && proj.achievements.length) {
+                    lines.push('\\begin{itemize}');
+                    proj.achievements.forEach(ach => lines.push(`  \\item ${esc(ach)}`));
+                    lines.push('\\end{itemize}');
+                  }
                 });
-                lines.push('\\end{itemize}');
-              }
-            });
+              });
+            } else if (projects.length) {
+              projects.forEach(proj => {
+                lines.push(`\\subsection{\\large \\${proj.icon || 'faShield'}\\ \\textbf{${esc(proj.title)}}}`);
+                if (proj.challenge) {
+                  lines.push(`\\textbf{挑战：} ${esc(proj.challenge)}`);
+                }
+                if (proj.achievements && proj.achievements.length) {
+                  lines.push('\\begin{itemize}');
+                  proj.achievements.forEach(ach => lines.push(`  \\item ${esc(ach)}`));
+                  lines.push('\\end{itemize}');
+                }
+              });
+            }
+
             lines.push('\\end{onehalfspacing}');
           }
           lines.push('');
