@@ -11,7 +11,12 @@
 % use progress bar for skill
 \RequirePackage{progressbar}
 % use hyperlink for email and url
-\RequirePackage{hyperref}
+\RequirePackage[
+  pdfencoding=auto,
+  pdfauthor={},
+  pdftitle={Resume},
+  bookmarks=false
+]{hyperref}
 \RequirePackage{url}
 \urlstyle{tt}
 % use fontawesome
