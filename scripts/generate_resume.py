@@ -107,66 +107,95 @@ def generate_resume_latex(data: dict, template_dir: str = "resume") -> str:
     
     latex_lines.append('\\end{minipage}')
     latex_lines.append('')
-    latex_lines.append('\\vfill')  # 弹性间距：自动平衡到一页
     
-    # 工作经历
-    experiences = data.get('experience', [])
-    if experiences:
-        latex_lines.append('\\section{\\Large \\faUsers\\ 工作经历}')
-        
-        for exp in experiences:
-            company = exp.get('company', '')
-            department = exp.get('department', '')
-            period = exp.get('period', '')
-            role = exp.get('role', '')
-            responsibilities = exp.get('responsibilities', '')
-            projects = exp.get('projects', [])
+    # 获取开关选项
+    options = data.get('options', {})
+    has_work = options.get('hasWorkExperience', True)
+    auto_one_page = options.get('autoOnePage', True)
+    
+    # 弹性间距（仅 autoOnePage 开启时）
+    if auto_one_page:
+        latex_lines.append('\\vfill')
+    
+    # 工作经历 / 过往经历（根据开关切换）
+    if has_work:
+        experiences = data.get('experience', [])
+        if experiences:
+            latex_lines.append('\\section{\\Large \\faUsers\\ 工作经历}')
             
-            # 公司和部门
-            latex_lines.append(
-                f'\\datedsubsection{{\\textbf{{{escape_latex(company)}}} \\space {{{escape_latex(department)}}}}}{{{period}}}'
-            )
-            latex_lines.append(f' \\role{{{escape_latex(role)}}}{{}}')
-            latex_lines.append('')
-            latex_lines.append('\\vspace{5pt}')
-            latex_lines.append('')
-            
-            # 核心职责
-            if responsibilities:
-                latex_lines.append(
-                    f'\\subsection{{\\Large \\faBullseye\\ \\textbf{{核心职责}}}}'
-                )
-                latex_lines.append(escape_latex(responsibilities))
-                latex_lines.append('\\vspace{5pt}')
-            
-            # 项目/工作详情
-            # 支持两种结构：project_groups（分组）或 projects（平铺）
-            project_groups = exp.get('project_groups', [])
-            projects = exp.get('projects', [])
-            
-            if project_groups or projects:
-                latex_lines.append('\\begin{onehalfspacing}')
+            for exp in experiences:
+                company = exp.get('company', '')
+                department = exp.get('department', '')
+                period = exp.get('period', '')
+                role = exp.get('role', '')
+                responsibilities = exp.get('responsibilities', '')
+                projects = exp.get('projects', [])
                 
-                # 分组结构（如：稳定性相关工作、监控与可观测相关工作）
-                if project_groups:
-                    for group in project_groups:
-                        group_title = group.get('group_title', '')
-                        group_icon = group.get('group_icon', 'faShield')
-                        group_projects = group.get('projects', [])
-                        
-                        if group_title:
-                            latex_lines.append(
-                                f'\\subsection{{\\Large \\{group_icon}\\ \\textbf{{{escape_latex(group_title)}}}}}'
-                            )
-                        
-                        for proj in group_projects:
+                # 公司和部门
+                latex_lines.append(
+                    f'\\datedsubsection{{\\textbf{{{escape_latex(company)}}} \\space {{{escape_latex(department)}}}}}{{{period}}}'
+                )
+                latex_lines.append(f' \\role{{{escape_latex(role)}}}{{}}')
+                latex_lines.append('')
+                latex_lines.append('\\vspace{5pt}')
+                latex_lines.append('')
+                
+                # 核心职责
+                if responsibilities:
+                    latex_lines.append(
+                        f'\\subsection{{\\Large \\faBullseye\\ \\textbf{{核心职责}}}}'
+                    )
+                    latex_lines.append(escape_latex(responsibilities))
+                    latex_lines.append('\\vspace{5pt}')
+                # 项目/工作详情
+                # 支持两种结构：project_groups（分组）或 projects（平铺）
+                project_groups = exp.get('project_groups', [])
+                projects = exp.get('projects', [])
+                
+                if project_groups or projects:
+                    latex_lines.append('\\begin{onehalfspacing}')
+                    
+                    # 分组结构（如：稳定性相关工作、监控与可观测相关工作）
+                    if project_groups:
+                        for group in project_groups:
+                            group_title = group.get('group_title', '')
+                            group_icon = group.get('group_icon', 'faShield')
+                            group_projects = group.get('projects', [])
+                            
+                            if group_title:
+                                latex_lines.append(
+                                    f'\\subsection{{\\Large \\{group_icon}\\ \\textbf{{{escape_latex(group_title)}}}}}'
+                                )
+                            
+                            for proj in group_projects:
+                                title = proj.get('title', '')
+                                icon = proj.get('icon', group_icon)
+                                challenge = proj.get('challenge', '')
+                                achievements = proj.get('achievements', [])
+                                
+                                latex_lines.append(
+                                    f'\\subsection{{\\textbf{{\\$\\blacktriangleright\\$}} {escape_latex(title)}}}'
+                                )
+                                
+                                if challenge:
+                                    latex_lines.append(f'\\textbf{{挑战：}} {escape_latex(challenge)}')
+                                
+                                if achievements:
+                                    latex_lines.append('\\begin{itemize}')
+                                    for ach in achievements:
+                                        latex_lines.append(f'  \\item {escape_latex(ach)}')
+                                    latex_lines.append('\\end{itemize}')
+                    
+                    # 平铺结构（兼容旧格式）
+                    elif projects:
+                        for proj in projects:
                             title = proj.get('title', '')
-                            icon = proj.get('icon', group_icon)
+                            icon = proj.get('icon', 'faShield')
                             challenge = proj.get('challenge', '')
                             achievements = proj.get('achievements', [])
                             
                             latex_lines.append(
-                                f'\\subsection{{\\textbf{{\\$\\blacktriangleright\\$}} {escape_latex(title)}}}'
+                                f'\\subsection{{\\large \\{icon}\\ \\textbf{{{escape_latex(title)}}}}}'
                             )
                             
                             if challenge:
@@ -177,33 +206,45 @@ def generate_resume_latex(data: dict, template_dir: str = "resume") -> str:
                                 for ach in achievements:
                                     latex_lines.append(f'  \\item {escape_latex(ach)}')
                                 latex_lines.append('\\end{itemize}')
-                
-                # 平铺结构（兼容旧格式）
-                elif projects:
-                    for proj in projects:
-                        title = proj.get('title', '')
-                        icon = proj.get('icon', 'faShield')
-                        challenge = proj.get('challenge', '')
-                        achievements = proj.get('achievements', [])
-                        
-                        latex_lines.append(
-                            f'\\subsection{{\\large \\{icon}\\ \\textbf{{{escape_latex(title)}}}}}'
-                        )
-                        
-                        if challenge:
-                            latex_lines.append(f'\\textbf{{挑战：}} {escape_latex(challenge)}')
-                        
-                        if achievements:
-                            latex_lines.append('\\begin{itemize}')
-                            for ach in achievements:
-                                latex_lines.append(f'  \\item {escape_latex(ach)}')
-                            latex_lines.append('\\end{itemize}')
-                
-                latex_lines.append('\\end{onehalfspacing}')
+                    
+                    latex_lines.append('\\end{onehalfspacing}')
+                latex_lines.append('')
+    else:
+        # 过往经历（应届生）
+        past_experiences = data.get('past_experience', [])
+        if past_experiences:
+            latex_lines.append('\\section{\\faHistory\\ 过往经历}')
             
-            latex_lines.append('')
+            for pe in past_experiences:
+                name = pe.get('name', '')
+                period = pe.get('period', '')
+                role = pe.get('role', '')
+                tech = pe.get('tech', '')
+                description = pe.get('description', '')
+                achievements_str = pe.get('achievements', '')
+                
+                title = f'{escape_latex(name)}（{escape_latex(period)}）' if period else escape_latex(name)
+                latex_lines.append(f'\\subsection{{\\textbf{{{title}}}}}')
+                
+                meta = ' | '.join(filter(None, [role, tech]))
+                if meta:
+                    latex_lines.append(f'\\textit{{{escape_latex(meta)}}}')
+                
+                if description:
+                    latex_lines.append(escape_latex(description))
+                
+                if achievements_str:
+                    achievements = [a.strip() for a in achievements_str.split('\n') if a.strip()]
+                    if achievements:
+                        latex_lines.append('\\begin{itemize}')
+                        for ach in achievements:
+                            latex_lines.append(f'  \\item {escape_latex(ach)}')
+                        latex_lines.append('\\end{itemize}')
+                
+                latex_lines.append('')
     
-    latex_lines.append('\\vfill')  # 弹性间距
+    if auto_one_page:
+        latex_lines.append('\vfill')  # 弹性间距
     
     # 技能
     skills = data.get('skills', [])
