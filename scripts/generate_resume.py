@@ -107,6 +107,7 @@ def generate_resume_latex(data: dict, template_dir: str = "resume") -> str:
     
     latex_lines.append('\\end{minipage}')
     latex_lines.append('')
+    latex_lines.append('\\vfill')  # 弹性间距：自动平衡到一页
     
     # 工作经历
     experiences = data.get('experience', [])
@@ -201,6 +202,8 @@ def generate_resume_latex(data: dict, template_dir: str = "resume") -> str:
                 latex_lines.append('\\end{onehalfspacing}')
             
             latex_lines.append('')
+    
+    latex_lines.append('\\vfill')  # 弹性间距
     
     # 技能
     skills = data.get('skills', [])

@@ -1557,6 +1557,7 @@
       
       lines.push('\\end{minipage}');
       lines.push('');
+      lines.push('\\vfill');  // 弹性间距：自动平衡到一页
 
       // Experience
       if (data.experience && data.experience.length) {
@@ -1618,6 +1619,8 @@
           lines.push('');
         });
       }
+
+      lines.push('\\vfill');  // 弹性间距
 
       // Skills
       if (data.skills && data.skills.length) {
