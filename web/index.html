@@ -1022,7 +1022,7 @@
           email: "zheming4work@outlook.com",
           phone: "(+86) 17640091901（微信可搜）"
         },
-        target_email: "605035076@qq.com",
+        target_email: "",
         education: [
           { school: "香港大学", location: "中国香港", period: "2023.9 -- 2025.6", degree: "硕士", major: "计算机科学" },
           { school: "大连理工大学", location: "大连", period: "2019.9 -- 2023.6", degree: "学士", major: "网络工程" }
@@ -1449,9 +1449,7 @@
     }
 
     // ==================== Config Loading ====================
-    // Try to load config from config.js (user creates this)
-    // window.GITHUB_REPO = 'username/repo';
-    // window.GITHUB_TOKEN = 'ghp_xxxx'; // Use with caution!
+    // config.js 会设置 window.GITHUB_REPO 和 window.GITHUB_TOKEN
 
     // ==================== Init ====================
     document.addEventListener('DOMContentLoaded', () => {
@@ -1460,5 +1458,6 @@
       addSkill();
     });
   </script>
+  <script src="config.js"></script>
 </body>
 </html>

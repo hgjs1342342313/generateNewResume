@@ -17,33 +17,32 @@ on:
 jobs:
   build-resume:
     runs-on: ubuntu-latest
-    container:
-      image: xucheng/texlive-full:latest
-    
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 设置 Python 环境
+      - name: 安装 TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-xetex texlive-lang-chinese texlive-fonts-recommended texlive-fonts-extra fonts-wqy-microhei
+          # 安装 fontawesome 包
+          sudo apt-get install -y texlive-fonts-extra
+
+      - name: 设置 Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: 安装依赖
-        run: |
-          pip install -q pyyaml
 
       - name: 查找待处理的简历文件
         id: find-resume
         run: |
           if [ -n "${{ github.event.inputs.resume_json }}" ]; then
-            # 使用手动输入的 JSON
             echo '${{ github.event.inputs.resume_json }}' > /tmp/resume_input.json
             echo "resume_file=/tmp/resume_input.json" >> $GITHUB_OUTPUT
           else
-            # 查找 pending 目录下最新的 JSON 文件
             LATEST=$(ls -t pending/*.json 2>/dev/null | head -n1)
             if [ -z "$LATEST" ]; then
               echo "❌ 未找到待处理的简历文件"
@@ -58,7 +57,6 @@ jobs:
           RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
           echo "📄 处理文件: $RESUME_FILE"
           
-          # 提取姓名用于文件命名
           NAME=$(python3 -c "import json; print(json.load(open('$RESUME_FILE'))['personal']['name'])" 2>/dev/null || echo "resume")
           SAFE_NAME=$(echo "$NAME" | sed 's/[^a-zA-Z0-9\u4e00-\u9fa5]/_/g')
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -66,10 +64,7 @@ jobs:
           OUTPUT_NAME="resume_${SAFE_NAME}_${TIMESTAMP}"
           echo "output_name=$OUTPUT_NAME" >> $GITHUB_OUTPUT
           
-          # 生成 LaTeX 文件
           python3 scripts/generate_resume.py "$RESUME_FILE" --output-dir output --template-dir resume
-          
-          # 重命名输出文件
           mv output/*.tex output/${OUTPUT_NAME}.tex
           
           echo "✅ LaTeX 文件已生成: output/${OUTPUT_NAME}.tex"
@@ -79,18 +74,14 @@ jobs:
         run: |
           OUTPUT_NAME="${{ steps.generate.outputs.output_name }}"
           cd output
-          
-          # 复制 resume 模板文件到当前目录
           cp -r ../resume/* .
           
-          # 编译 LaTeX（运行两次以确保引用正确）
           echo "🔨 第一次编译..."
           xelatex -interaction=nonstopmode ${OUTPUT_NAME}.tex || true
           
           echo "🔨 第二次编译..."
           xelatex -interaction=nonstopmode ${OUTPUT_NAME}.tex
           
-          # 检查 PDF 是否生成
           if [ ! -f "${OUTPUT_NAME}.pdf" ]; then
             echo "❌ PDF 生成失败"
             cat ${OUTPUT_NAME}.log
@@ -98,7 +89,6 @@ jobs:
           fi
           
           echo "✅ PDF 生成成功: ${OUTPUT_NAME}.pdf"
-          echo "pdf_file=${OUTPUT_NAME}.pdf" >> $GITHUB_STEP_SUMMARY
 
       - name: 上传 PDF Artifact
         uses: actions/upload-artifact@v4
@@ -106,38 +96,6 @@ jobs:
           name: resume-pdf
           path: output/*.pdf
           retention-days: 30
-
-      - name: 上传 LaTeX 源文件 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: resume-tex
-          path: |
-            output/*.tex
-            resume/
-          retention-days: 30
-
-      - name: 移动已处理的文件
-        if: github.event.inputs.resume_json == ''
-        run: |
-          RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
-          if [ -f "$RESUME_FILE" ]; then
-            mkdir -p processed
-            mv "$RESUME_FILE" processed/
-            echo "✅ 已将 $RESUME_FILE 移动到 processed/ 目录"
-          fi
-
-      - name: 提交处理结果
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # 提交移动的文件
-          if [ -d "processed" ]; then
-            git add processed/ pending/ 2>/dev/null || true
-            git diff --staged --quiet || git commit -m "chore: 移动已处理的简历文件到 processed/"
-          fi
-          
-          git push || true
 
       - name: 发送邮件
         id: send-email
@@ -150,7 +108,6 @@ jobs:
           OUTPUT_NAME="${{ steps.generate.outputs.output_name }}"
           RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
           
-          # 从 JSON 提取目标邮箱和姓名
           TARGET_EMAIL=$(python3 -c "import json; print(json.load(open('$RESUME_FILE')).get('target_email', ''))" 2>/dev/null || echo "")
           NAME=$(python3 -c "import json; print(json.load(open('$RESUME_FILE'))['personal']['name'])" 2>/dev/null || echo "用户")
           
@@ -162,13 +119,10 @@ jobs:
           
           echo "📧 发送简历到: $TARGET_EMAIL"
           
-          # 设置环境变量供 Python 脚本使用
-          export RESUME_FILE="$RESUME_FILE"
           export OUTPUT_NAME="$OUTPUT_NAME"
           export TARGET_EMAIL="$TARGET_EMAIL"
           export NAME="$NAME"
           
-          # 使用 Python 发送邮件
           python3 -c "
           import smtplib, os
           from email.mime.text import MIMEText
@@ -209,6 +163,25 @@ jobs:
           
           echo "email_sent=true" >> $GITHUB_OUTPUT
           echo "target_email=$TARGET_EMAIL" >> $GITHUB_OUTPUT
+
+      - name: 移动已处理的文件
+        if: github.event.inputs.resume_json == ''
+        run: |
+          RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
+          if [ -f "$RESUME_FILE" ]; then
+            mkdir -p processed
+            mv "$RESUME_FILE" processed/
+          fi
+
+      - name: 提交处理结果
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -d "processed" ]; then
+            git add processed/ pending/ 2>/dev/null || true
+            git diff --staged --quiet || git commit -m "chore: 移动已处理的简历文件到 processed/"
+          fi
+          git push || true
 
       - name: 生成摘要
         run: |
