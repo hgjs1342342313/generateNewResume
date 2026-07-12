@@ -122,9 +122,10 @@ jobs:
           export OUTPUT_NAME="$OUTPUT_NAME"
           export TARGET_EMAIL="$TARGET_EMAIL"
           export NAME="$NAME"
+          export RESUME_FILE="$RESUME_FILE"
           
           python3 -c "
-          import smtplib, os
+          import smtplib, os, json
           from email.mime.text import MIMEText
           from email.mime.multipart import MIMEMultipart
           from email.mime.application import MIMEApplication
@@ -138,13 +139,92 @@ jobs:
           output_name = os.environ['OUTPUT_NAME']
           target_email = os.environ['TARGET_EMAIL']
           name = os.environ['NAME']
+          resume_file = os.environ['RESUME_FILE']
+
+          # 读取简历数据，生成纯文本正文
+          with open(resume_file, 'r', encoding='utf-8') as f:
+              data = json.load(f)
+
+          lines = [f'您好 {name}！', '', '您的简历已成功生成，PDF 文件见附件。', '', '=' * 40, '📋 简历内容（方便复制到网申系统）', '=' * 40, '']
+
+          # 个人信息
+          personal = data.get('personal', {})
+          lines.append('【基本信息】')
+          lines.append(f'姓名：{personal.get(\"name\", \"\")}')
+          lines.append(f'邮箱：{personal.get(\"email\", \"\")}')
+          lines.append(f'电话：{personal.get(\"phone\", \"\")}')
+          lines.append('')
+
+          # 教育背景
+          for edu in data.get('education', []):
+              lines.append('【教育背景】')
+              lines.append(f'学校：{edu.get(\"school\", \"\")}')
+              lines.append(f'地点：{edu.get(\"location\", \"\")}')
+              lines.append(f'时间：{edu.get(\"period\", \"\")}')
+              lines.append(f'学位：{edu.get(\"degree\", \"\")}')
+              lines.append(f'专业：{edu.get(\"major\", \"\")}')
+              lines.append('')
+
+          # 工作经历 或 过往经历
+          options = data.get('options', {})
+          if options.get('hasWorkExperience'):
+              for exp in data.get('experience', []):
+                  lines.append('【工作经历】')
+                  lines.append(f'公司：{exp.get(\"company\", \"\")}')
+                  lines.append(f'部门：{exp.get(\"department\", \"\")}')
+                  lines.append(f'时间：{exp.get(\"period\", \"\")}')
+                  lines.append(f'职位：{exp.get(\"role\", \"\")}')
+                  if exp.get('responsibilities'):
+                      lines.append(f'核心职责：{exp[\"responsibilities\"]}')
+                  for group in exp.get('project_groups', []):
+                      lines.append(f'  项目组：{group.get(\"group_title\", \"\")}')
+                      for proj in group.get('projects', []):
+                          lines.append(f'    项目：{proj.get(\"title\", \"\")}')
+                          if proj.get('challenge'):
+                              lines.append(f'    挑战：{proj[\"challenge\"]}')
+                          for ach in proj.get('achievements', []):
+                              lines.append(f'    · {ach}')
+                  for proj in exp.get('projects', []):
+                      lines.append(f'  项目：{proj.get(\"title\", \"\")}')
+                      if proj.get('challenge'):
+                          lines.append(f'  挑战：{proj[\"challenge\"]}')
+                      for ach in proj.get('achievements', []):
+                          lines.append(f'  · {ach}')
+                  lines.append('')
+          else:
+              for pe in data.get('past_experience', []):
+                  lines.append('【过往经历】')
+                  lines.append(f'名称：{pe.get(\"name\", \"\")}')
+                  lines.append(f'时间：{pe.get(\"period\", \"\")}')
+                  lines.append(f'角色：{pe.get(\"role\", \"\")}')
+                  lines.append(f'技术栈：{pe.get(\"tech\", \"\")}')
+                  if pe.get('description'):
+                      lines.append(f'描述：{pe[\"description\"]}')
+                  if pe.get('achievements'):
+                      for ach in pe['achievements'].split('\n'):
+                          ach = ach.strip()
+                          if ach:
+                              lines.append(f'· {ach}')
+                  lines.append('')
+
+          # 技能
+          skills = data.get('skills', [])
+          if skills:
+              lines.append('【技能】')
+              for skill in skills:
+                  lines.append(f'· {skill}')
+              lines.append('')
+
+          lines.append('=' * 40)
+          lines.append('祝好！')
+          lines.append('简历生成器')
+
+          body = '\n'.join(lines)
 
           msg = MIMEMultipart()
           msg['From'] = formataddr(('简历生成器', smtp_user))
           msg['To'] = target_email
           msg['Subject'] = f'您的简历已生成 - {name}'
-
-          body = f'您好 {name}！\n\n您的简历已成功生成，PDF 文件见附件。\n\n祝好！\n简历生成器'
           msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
           pdf_path = f'output/{output_name}.pdf'
