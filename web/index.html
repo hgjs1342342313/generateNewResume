@@ -561,6 +561,26 @@
           </p>
         </div>
 
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--gray-200);">
+
+        <div class="section-title" style="font-size: 1rem; margin-bottom: 1rem;"><span class="icon">🎨</span> 简历样式选项</div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="hasWorkExperience" style="width: 1.1rem; height: 1.1rem;">
+            <span>有工作经验</span>
+          </label>
+          <p class="help-text">勾选：显示「工作经历」模块；不勾选：显示「过往经历」模块（核心职责字号缩小）</p>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="autoOnePage" checked style="width: 1.1rem; height: 1.1rem;">
+            <span>自动填充一页</span>
+          </label>
+          <p class="help-text">勾选：使用弹性间距自动填充满一页；不勾选：紧凑布局</p>
+        </div>
+
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
           <button class="btn btn-primary btn-lg" onclick="saveSettings()" style="flex: 1;">
             💾 保存设置
@@ -646,12 +666,22 @@
         </button>
       </div>
 
-      <!-- Experience -->
-      <div class="section-card">
+      <!-- Experience (has work experience) -->
+      <div class="section-card" id="experienceCard" style="display:none;">
         <div class="section-title"><span class="icon">💼</span> 工作经历</div>
         <div id="experienceList"></div>
         <button class="add-item-btn" onclick="addExperience()">
           <span>＋</span> 添加工作经历
+        </button>
+      </div>
+
+      <!-- Past Experience (no work experience, for fresh graduates) -->
+      <div class="section-card" id="pastExperienceCard">
+        <div class="section-title"><span class="icon">🔧</span> 过往经历</div>
+        <p class="help-text" style="margin-bottom: 0.5rem;">展示实习、项目、竞赛等经历</p>
+        <div id="pastExperienceList"></div>
+        <button class="add-item-btn" onclick="addPastExperience()">
+          <span>＋</span> 添加过往经历
         </button>
       </div>
 
@@ -755,6 +785,7 @@
     let currentStep = 0;
     let educationCount = 0;
     let experienceCount = 0;
+    let pastExperienceCount = 0;
     let skillCount = 0;
 
     // ==================== Settings (localStorage) ====================
@@ -762,12 +793,16 @@
       return {
         repo: localStorage.getItem('resume_github_repo') || '',
         token: localStorage.getItem('resume_github_token') || '',
+        hasWorkExperience: localStorage.getItem('resume_has_work_exp') === 'true',
+        autoOnePage: localStorage.getItem('resume_auto_one_page') !== 'false',
       };
     }
 
     function saveSettings() {
       const repo = document.getElementById('settingsRepo').value.trim();
       const token = document.getElementById('settingsToken').value.trim();
+      const hasWorkExperience = document.getElementById('hasWorkExperience').checked;
+      const autoOnePage = document.getElementById('autoOnePage').checked;
       const statusDiv = document.getElementById('settingsStatus');
 
       if (!repo || !token) {
@@ -779,6 +814,11 @@
 
       localStorage.setItem('resume_github_repo', repo);
       localStorage.setItem('resume_github_token', token);
+      localStorage.setItem('resume_has_work_exp', hasWorkExperience);
+      localStorage.setItem('resume_auto_one_page', autoOnePage);
+
+      // 切换表单模块显示
+      toggleFormModules();
 
       statusDiv.className = 'status-msg success';
       statusDiv.innerHTML = '<span>✅</span><span>设置已保存到浏览器本地</span>';
@@ -848,6 +888,16 @@
       const settings = getSettings();
       document.getElementById('settingsRepo').value = settings.repo;
       document.getElementById('settingsToken').value = settings.token;
+      document.getElementById('hasWorkExperience').checked = settings.hasWorkExperience;
+      document.getElementById('autoOnePage').checked = settings.autoOnePage;
+    }
+
+    function toggleFormModules() {
+      const hasWork = document.getElementById('hasWorkExperience').checked;
+      const workCard = document.getElementById('experienceCard');
+      const pastCard = document.getElementById('pastExperienceCard');
+      if (workCard) workCard.style.display = hasWork ? '' : 'none';
+      if (pastCard) pastCard.style.display = hasWork ? 'none' : '';
     }
 
     // ==================== Toast ====================
@@ -1107,6 +1157,51 @@
       container.appendChild(div);
     }
 
+    // ==================== Past Experience (fresh graduate) ====================
+    function addPastExperience(data = null) {
+      pastExperienceCount++;
+      const id = pastExperienceCount;
+      const container = document.getElementById('pastExperienceList');
+      const div = document.createElement('div');
+      div.className = 'array-item';
+      div.id = `pastexp-${id}`;
+      div.innerHTML = `
+        <div class="array-item-header">
+          <span><span class="array-item-number">${id}</span>过往经历 #${id}</span>
+          <button class="btn btn-ghost btn-sm" onclick="removeItem('pastexp-${id}')">✕ 删除</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>经历名称 <span class="required">*</span></label>
+            <input type="text" class="pastexp-name" value="${data ? escHtml(data.name || '') : ''}" placeholder="分布式系统课程项目 / 某某竞赛">
+          </div>
+          <div class="form-group">
+            <label>时间段</label>
+            <input type="text" class="pastexp-period" value="${data ? escHtml(data.period || '') : ''}" placeholder="2023.9 -- 2024.1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>角色/职责</label>
+            <input type="text" class="pastexp-role" value="${data ? escHtml(data.role || '') : ''}" placeholder="核心开发者 / 组长">
+          </div>
+          <div class="form-group">
+            <label>技术栈</label>
+            <input type="text" class="pastexp-tech" value="${data ? escHtml(data.tech || '') : ''}" placeholder="Go, Kubernetes, MySQL">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <textarea class="pastexp-desc" rows="2" placeholder="项目背景和目标...">${data ? escHtml(data.description || '') : ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label>主要成果（每行一条）</label>
+          <textarea class="pastexp-achievements" rows="3" placeholder="设计并实现了...&#10;优化了性能，提升 30%">${data ? escHtml(data.achievements || '') : ''}</textarea>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
     // ==================== Utility ====================
     function removeItem(id) {
       document.getElementById(id)?.remove();
@@ -1128,8 +1223,13 @@
         },
         target_email: document.getElementById('targetEmail').value.trim(),
         education: [],
+        past_experience: [],
         experience: [],
-        skills: []
+        skills: [],
+        options: {
+          hasWorkExperience: document.getElementById('hasWorkExperience').checked,
+          autoOnePage: document.getElementById('autoOnePage').checked,
+        }
       };
 
       // Education
@@ -1140,6 +1240,18 @@
           period: item.querySelector('.edu-period').value.trim(),
           degree: item.querySelector('.edu-degree').value,
           major: item.querySelector('.edu-major').value.trim(),
+        });
+      });
+
+      // Past Experience (fresh graduate)
+      document.querySelectorAll('#pastExperienceList .array-item').forEach(item => {
+        data.past_experience.push({
+          name: item.querySelector('.pastexp-name').value.trim(),
+          period: item.querySelector('.pastexp-period').value.trim(),
+          role: item.querySelector('.pastexp-role').value.trim(),
+          tech: item.querySelector('.pastexp-tech').value.trim(),
+          description: item.querySelector('.pastexp-desc').value.trim(),
+          achievements: item.querySelector('.pastexp-achievements').value.trim(),
         });
       });
 
@@ -1555,25 +1667,33 @@
         lines.push(`  \\textit{${esc(edu.degree)}}\\ ${esc(edu.major)}`);
       });
       
-      lines.push('\\end{minipage}');
+      lines.push('\end{minipage}');
       lines.push('');
-      lines.push('\\vfill');  // 弹性间距：自动平衡到一页
 
-      // Experience
-      if (data.experience && data.experience.length) {
-        lines.push('\\section{\\Large \\faUsers\\ 工作经历}');
+      // 弹性间距（仅 autoOnePage 开启时）
+      const autoOnePage = data.options?.autoOnePage !== false;
+      if (autoOnePage) {
+        lines.push('\vfill');
+      }
+
+      // Experience / Past Experience（根据开关切换）
+      const hasWork = data.options?.hasWorkExperience;
+
+      if (hasWork && data.experience && data.experience.length) {
+        // 工作经历
+        lines.push('\section{\Large \faUsers\ 工作经历}');
         
         data.experience.forEach(exp => {
-          lines.push(`\\datedsubsection{\\textbf{${esc(exp.company)}} \\space {${esc(exp.department)}}}{${esc(exp.period)}}`);
-          lines.push(` \\role{${esc(exp.role)}}{}`);
+          lines.push(`\datedsubsection{\textbf{${esc(exp.company)}} \space {${esc(exp.department)}}}{${esc(exp.period)}}`);
+          lines.push(` \role{${esc(exp.role)}}{}`);
           lines.push('');
-          lines.push('\\vspace{5pt}');
+          lines.push('\vspace{5pt}');
           lines.push('');
           
           if (exp.responsibilities) {
-            lines.push('\\subsection{\\Large \\faBullseye\\ \\textbf{核心职责}}');
+            lines.push('\subsection{\Large \faBullseye\ \textbf{核心职责}}');
             lines.push(esc(exp.responsibilities));
-            lines.push('\\vspace{5pt}');
+            lines.push('\vspace{5pt}');
           }
 
           // 支持分组结构和平铺结构
@@ -1581,46 +1701,72 @@
           const projects = exp.projects || [];
 
           if (projectGroups.length || projects.length) {
-            lines.push('\\begin{onehalfspacing}');
+            lines.push('\begin{onehalfspacing}');
 
             if (projectGroups.length) {
               projectGroups.forEach(group => {
                 if (group.group_title) {
-                  lines.push(`\\subsection{\\Large \\${group.group_icon || 'faShield'}\\ \\textbf{${esc(group.group_title)}}}`);
+                  lines.push(`\subsection{\Large \${group.group_icon || 'faShield'}\ \textbf{${esc(group.group_title)}}}`);
                 }
                 (group.projects || []).forEach(proj => {
-                  lines.push(`\\subsection{\\textbf{$\\blacktriangleright$} ${esc(proj.title)}}`);
+                  lines.push(`\subsection{\textbf{$\blacktriangleright$} ${esc(proj.title)}}`);
                   if (proj.challenge) {
-                    lines.push(`\\textbf{挑战：} ${esc(proj.challenge)}`);
+                    lines.push(`\textbf{挑战：} ${esc(proj.challenge)}`);
                   }
                   if (proj.achievements && proj.achievements.length) {
-                    lines.push('\\begin{itemize}');
-                    proj.achievements.forEach(ach => lines.push(`  \\item ${esc(ach)}`));
-                    lines.push('\\end{itemize}');
+                    lines.push('\begin{itemize}');
+                    proj.achievements.forEach(ach => lines.push(`  \item ${esc(ach)}`));
+                    lines.push('\end{itemize}');
                   }
                 });
               });
             } else if (projects.length) {
               projects.forEach(proj => {
-                lines.push(`\\subsection{\\large \\${proj.icon || 'faShield'}\\ \\textbf{${esc(proj.title)}}}`);
+                lines.push(`\subsection{\large \${proj.icon || 'faShield'}\ \textbf{${esc(proj.title)}}}`);
                 if (proj.challenge) {
-                  lines.push(`\\textbf{挑战：} ${esc(proj.challenge)}`);
+                  lines.push(`\textbf{挑战：} ${esc(proj.challenge)}`);
                 }
                 if (proj.achievements && proj.achievements.length) {
-                  lines.push('\\begin{itemize}');
-                  proj.achievements.forEach(ach => lines.push(`  \\item ${esc(ach)}`));
-                  lines.push('\\end{itemize}');
+                  lines.push('\begin{itemize}');
+                  proj.achievements.forEach(ach => lines.push(`  \item ${esc(ach)}`));
+                  lines.push('\end{itemize}');
                 }
               });
             }
 
-            lines.push('\\end{onehalfspacing}');
+            lines.push('\end{onehalfspacing}');
+          }
+          lines.push('');
+        });
+      } else if (!hasWork && data.past_experience && data.past_experience.length) {
+        // 过往经历（应届生）
+        lines.push('\section{\faHistory\ 过往经历}');
+        
+        data.past_experience.forEach(pe => {
+          const title = pe.period ? `${esc(pe.name)}（${esc(pe.period)}）` : esc(pe.name);
+          lines.push(`\subsection{\textbf{${title}}}`);
+          if (pe.role || pe.tech) {
+            const meta = [pe.role, pe.tech].filter(Boolean).join(' | ');
+            lines.push(`\textit{${esc(meta)}}`);
+          }
+          if (pe.description) {
+            lines.push(esc(pe.description));
+          }
+          if (pe.achievements) {
+            const achs = pe.achievements.split('\n').filter(Boolean);
+            if (achs.length) {
+              lines.push('\begin{itemize}');
+              achs.forEach(ach => lines.push(`  \item ${esc(ach)}`));
+              lines.push('\end{itemize}');
+            }
           }
           lines.push('');
         });
       }
 
-      lines.push('\\vfill');  // 弹性间距
+      if (autoOnePage) {
+        lines.push('\vfill');
+      }
 
       // Skills
       if (data.skills && data.skills.length) {
@@ -1647,6 +1793,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       // 加载保存的设置
       loadSettings();
+      // 切换表单模块显示
+      toggleFormModules();
       // 添加初始空字段
       addEducation();
       addSkill();
