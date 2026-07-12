@@ -557,6 +557,11 @@
           <label>电话 <span class="required">*</span></label>
           <input type="text" id="personalPhone" placeholder="(+86) 13800138000">
         </div>
+        <div class="form-group">
+          <label>接收简历邮箱 <span class="required">*</span></label>
+          <input type="email" id="targetEmail" placeholder="生成完成后，PDF 将发送到此邮箱">
+          <p class="help-text">简历生成完成后，PDF 文件会自动发送到此邮箱</p>
+        </div>
       </div>
 
       <!-- Education -->
@@ -620,29 +625,18 @@
         <div id="generateStatus">
           <div class="status-msg info">
             <span>ℹ️</span>
-            <span>点击下方按钮开始生成，将通过 GitHub Actions 编译 LaTeX 并生成 PDF。</span>
+            <span>点击下方按钮，简历将自动编译并发送到您的邮箱（约 1-3 分钟）。</span>
           </div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
           <button class="btn btn-primary btn-lg" id="generateBtn" onclick="generateResume()" style="width: 100%;">
-            🚀 提交到 GitHub Actions 编译
-          </button>
-
-          <div style="text-align: center; color: var(--gray-400); font-size: 0.85rem;">— 或 —</div>
-
-          <button class="btn btn-outline btn-lg" onclick="downloadTexZip()" style="width: 100%;">
-            📦 下载 LaTeX 源文件 ZIP（自行编译）
+            🚀 生成简历并发送到邮箱
           </button>
         </div>
 
         <div id="resultArea" class="hidden" style="margin-top: 1.5rem;">
           <div class="status-msg success" id="resultMsg"></div>
-          <div style="margin-top: 1rem;">
-            <a id="downloadPdfLink" href="#" class="btn btn-success btn-lg" style="width: 100%; text-decoration: none;">
-              📥 下载 PDF 简历
-            </a>
-          </div>
         </div>
       </div>
 
@@ -742,6 +736,10 @@
       }
       if (!data.personal.phone) {
         showToast('请填写电话', 'error');
+        return false;
+      }
+      if (!data.target_email) {
+        showToast('请填写接收简历邮箱', 'error');
         return false;
       }
       if (!data.education.length) {
@@ -962,6 +960,7 @@
           email: document.getElementById('personalEmail').value.trim(),
           phone: document.getElementById('personalPhone').value.trim(),
         },
+        target_email: document.getElementById('targetEmail').value.trim(),
         education: [],
         experience: [],
         skills: []
@@ -1023,6 +1022,7 @@
           email: "zheming4work@outlook.com",
           phone: "(+86) 17640091901（微信可搜）"
         },
+        target_email: "605035076@qq.com",
         education: [
           { school: "香港大学", location: "中国香港", period: "2023.9 -- 2025.6", degree: "硕士", major: "计算机科学" },
           { school: "大连理工大学", location: "大连", period: "2019.9 -- 2023.6", degree: "学士", major: "网络工程" }
@@ -1082,6 +1082,7 @@
       document.getElementById('personalName').value = data.personal.name || '';
       document.getElementById('personalEmail').value = data.personal.email || '';
       document.getElementById('personalPhone').value = data.personal.phone || '';
+      document.getElementById('targetEmail').value = data.target_email || '';
 
       // Education
       (data.education || []).forEach(edu => addEducation(edu));
@@ -1158,7 +1159,7 @@
       statusDiv.innerHTML = `
         <div class="status-msg info">
           <span class="spinner" style="border-color: rgba(37,99,235,0.3); border-top-color: var(--primary);"></span>
-          <span>正在提交到 GitHub Actions，请稍候...</span>
+          <span>正在提交，请稍候...</span>
         </div>
       `;
 
@@ -1197,7 +1198,7 @@
         statusDiv.innerHTML = `
           <div class="status-msg success">
             <span>✅</span>
-            <span>已提交到 GitHub Actions！编译通常需要 1-3 分钟，请稍后刷新查看结果。</span>
+            <span>简历已提交生成！预计 1-3 分钟后发送到您的邮箱，请查收。</span>
           </div>
         `;
 
@@ -1214,7 +1215,7 @@
         showToast('生成失败：' + error.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '🚀 提交到 GitHub Actions 编译';
+        btn.innerHTML = '🚀 生成简历并发送到邮箱';
       }
     }
 
@@ -1260,9 +1261,8 @@
             
             if (pdfArtifact) {
               document.getElementById('resultArea').classList.remove('hidden');
-              document.getElementById('resultMsg').innerHTML = `✅ 简历编译成功！点击下方按钮下载 PDF。`;
-              document.getElementById('downloadPdfLink').href = `https://github.com/${GITHUB_REPO}/suites/${latestRun.id}/artifacts/download`;
-              showToast('简历编译成功！', 'success');
+              document.getElementById('resultMsg').innerHTML = `✅ 简历生成成功！PDF 已发送到您的邮箱，请查收。`;
+              showToast('简历已发送到邮箱！', 'success');
               return;
             }
           }

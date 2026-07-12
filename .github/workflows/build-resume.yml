@@ -139,13 +139,105 @@ jobs:
           
           git push || true
 
+      - name: 发送邮件
+        id: send-email
+        env:
+          SMTP_SERVER: smtp.qq.com
+          SMTP_PORT: 587
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: |
+          OUTPUT_NAME="${{ steps.generate.outputs.output_name }}"
+          RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
+          
+          # 从 JSON 提取目标邮箱
+          TARGET_EMAIL=$(python3 -c "import json; print(json.load(open('$RESUME_FILE')).get('target_email', ''))" 2>/dev/null || echo "")
+          NAME=$(python3 -c "import json; print(json.load(open('$RESUME_FILE'))['personal']['name'])" 2>/dev/null || echo "用户")
+          
+          if [ -z "$TARGET_EMAIL" ]; then
+            echo "⚠️ 未提供目标邮箱，跳过邮件发送"
+            echo "email_sent=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "📧 发送简历到: $TARGET_EMAIL"
+          
+          # 使用 Python 发送邮件
+          python3 << 'PYTHON_SCRIPT'
+          import smtplib
+          import os
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+          from email.mime.application import MIMEApplication
+          from email.utils import formataddr
+          import json
+          
+          smtp_server = os.environ['SMTP_SERVER']
+          smtp_port = int(os.environ['SMTP_PORT'])
+          smtp_user = os.environ['SMTP_USER']
+          smtp_pass = os.environ['SMTP_PASS']
+          
+          resume_file = os.environ.get('RESUME_FILE', '')
+          output_name = os.environ.get('OUTPUT_NAME', 'resume')
+          target_email = os.environ.get('TARGET_EMAIL', '')
+          name = os.environ.get('NAME', '用户')
+          
+          # 创建邮件
+          msg = MIMEMultipart()
+          msg['From'] = formataddr(('简历生成器', smtp_user))
+          msg['To'] = target_email
+          msg['Subject'] = f'您的简历已生成 - {name}'
+          
+          # 邮件正文
+          body = f'''
+          您好 {name}！
+          
+          您的简历已成功生成，PDF 文件见附件。
+          
+          祝好！
+          简历生成器
+          '''
+          msg.attach(MIMEText(body, 'plain', 'utf-8'))
+          
+          # 添加 PDF 附件
+          pdf_path = f'output/{output_name}.pdf'
+          with open(pdf_path, 'rb') as f:
+              pdf = MIMEApplication(f.read(), _subtype='pdf')
+              pdf.add_header('Content-Disposition', 'attachment', filename=f'{output_name}.pdf')
+              msg.attach(pdf)
+          
+          # 发送邮件
+          with smtplib.SMTP(smtp_server, smtp_port) as server:
+              server.starttls()
+              server.login(smtp_user, smtp_pass)
+              server.sendmail(smtp_user, [target_email], msg.as_string())
+          
+          print(f'✅ 邮件已发送到: {target_email}')
+          PYTHON_SCRIPT
+          
+          # 设置环境变量供 Python 脚本使用
+          export RESUME_FILE="$RESUME_FILE"
+          export OUTPUT_NAME="$OUTPUT_NAME"
+          export TARGET_EMAIL="$TARGET_EMAIL"
+          export NAME="$NAME"
+          
+          echo "email_sent=true" >> $GITHUB_OUTPUT
+          echo "target_email=$TARGET_EMAIL" >> $GITHUB_OUTPUT
+
       - name: 生成摘要
         run: |
           OUTPUT_NAME="${{ steps.generate.outputs.output_name }}"
+          EMAIL_SENT="${{ steps.send-email.outputs.email_sent }}"
+          TARGET_EMAIL="${{ steps.send-email.outputs.target_email }}"
+          
           echo "## 📄 简历编译完成" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **输出文件**: \`${OUTPUT_NAME}.pdf\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **下载方式**: 在 Actions 页面下载 \`resume-pdf\` artifact" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📥 下载链接" >> $GITHUB_STEP_SUMMARY
-          echo "在当前 workflow 运行完成后，点击下方的 **Artifacts** 区域下载生成的 PDF 文件。" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$EMAIL_SENT" = "true" ]; then
+            echo "- **邮件已发送**: ${TARGET_EMAIL}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ 简历 PDF 已发送到您的邮箱，请查收！" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **下载方式**: 在 Actions 页面下载 \`resume-pdf\` artifact" >> $GITHUB_STEP_SUMMARY
+          fi
