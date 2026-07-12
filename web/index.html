@@ -511,6 +511,11 @@
 
   <!-- Steps Bar -->
   <nav class="steps-bar" id="stepsBar">
+    <div class="step-item" data-step="0" onclick="goToStep(0)">
+      <span class="step-num">⚙</span>
+      <span>设置</span>
+    </div>
+    <div class="step-connector" id="connector0"></div>
     <div class="step-item active" data-step="1" onclick="goToStep(1)">
       <span class="step-num">1</span>
       <span>填写信息</span>
@@ -529,6 +534,74 @@
 
   <!-- Main Content -->
   <div class="container">
+
+    <!-- Step 0: Settings -->
+    <div class="tab-panel" id="step0Panel">
+      <div class="section-card">
+        <div class="section-title"><span class="icon">⚙️</span> 站点设置</div>
+        <p class="help-text" style="margin-bottom: 1.5rem;">配置 GitHub 仓库信息后，即可在线生成简历并发送到邮箱。这些信息仅保存在您的浏览器本地，不会上传到任何服务器。</p>
+
+        <div id="settingsStatus" class="hidden"></div>
+
+        <div class="form-group">
+          <label>GitHub 仓库地址 <span class="required">*</span></label>
+          <input type="text" id="settingsRepo" placeholder="用户名/仓库名，如：hgjs1342342313/generateNewResume">
+          <p class="help-text">格式：用户名/仓库名</p>
+        </div>
+
+        <div class="form-group">
+          <label>GitHub Personal Access Token <span class="required">*</span></label>
+          <div style="position: relative;">
+            <input type="password" id="settingsToken" placeholder="ghp_xxxxxxxxxxxx" style="padding-right: 3rem;">
+            <button type="button" onclick="toggleTokenVisibility()" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--gray-400);" id="toggleTokenBtn">👁️</button>
+          </div>
+          <p class="help-text">
+            需要 <code>repo</code> 权限。
+            <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--primary);">去创建 →</a>
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <button class="btn btn-primary btn-lg" onclick="saveSettings()" style="flex: 1;">
+            💾 保存设置
+          </button>
+          <button class="btn btn-outline btn-lg" onclick="testConnection()" id="testConnBtn" style="flex: 1;">
+            🔗 测试连接
+          </button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title"><span class="icon">📖</span> 使用说明</div>
+        <div style="font-size: 0.9rem; color: var(--gray-600); line-height: 1.8;">
+          <p><strong>1. 创建 GitHub Token</strong></p>
+          <ol style="margin-left: 1.5rem; margin-bottom: 1rem;">
+            <li>访问 <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--primary);">GitHub Settings → Tokens</a></li>
+            <li>点击 "Generate new token (classic)"</li>
+            <li>勾选 <code>repo</code> 权限</li>
+            <li>生成并复制 token</li>
+          </ol>
+          <p><strong>2. 填写配置</strong></p>
+          <ol style="margin-left: 1.5rem; margin-bottom: 1rem;">
+            <li>输入仓库地址（格式：<code>用户名/仓库名</code>）</li>
+            <li>粘贴 Token</li>
+            <li>点击"测试连接"确认可用</li>
+          </ol>
+          <p><strong>3. 生成简历</strong></p>
+          <ol style="margin-left: 1.5rem;">
+            <li>填写简历信息</li>
+            <li>点击生成，等待邮件</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <div></div>
+        <button class="btn btn-primary btn-lg" onclick="goToStep(1)">
+          开始填写简历 →
+        </button>
+      </div>
+    </div>
 
     <!-- Step 1: Form -->
     <div class="tab-panel active" id="step1Panel">
@@ -683,6 +756,99 @@
     let educationCount = 0;
     let experienceCount = 0;
     let skillCount = 0;
+
+    // ==================== Settings (localStorage) ====================
+    function getSettings() {
+      return {
+        repo: localStorage.getItem('resume_github_repo') || '',
+        token: localStorage.getItem('resume_github_token') || '',
+      };
+    }
+
+    function saveSettings() {
+      const repo = document.getElementById('settingsRepo').value.trim();
+      const token = document.getElementById('settingsToken').value.trim();
+      const statusDiv = document.getElementById('settingsStatus');
+
+      if (!repo || !token) {
+        statusDiv.className = 'status-msg error';
+        statusDiv.innerHTML = '<span>❌</span><span>请填写仓库地址和 Token</span>';
+        statusDiv.classList.remove('hidden');
+        return;
+      }
+
+      localStorage.setItem('resume_github_repo', repo);
+      localStorage.setItem('resume_github_token', token);
+
+      statusDiv.className = 'status-msg success';
+      statusDiv.innerHTML = '<span>✅</span><span>设置已保存到浏览器本地</span>';
+      statusDiv.classList.remove('hidden');
+      showToast('设置已保存', 'success');
+    }
+
+    async function testConnection() {
+      const repo = document.getElementById('settingsRepo').value.trim();
+      const token = document.getElementById('settingsToken').value.trim();
+      const statusDiv = document.getElementById('settingsStatus');
+      const btn = document.getElementById('testConnBtn');
+
+      if (!repo || !token) {
+        statusDiv.className = 'status-msg error';
+        statusDiv.innerHTML = '<span>❌</span><span>请先填写仓库地址和 Token</span>';
+        statusDiv.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 测试中...';
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${repo}`, {
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          statusDiv.className = 'status-msg success';
+          statusDiv.innerHTML = `<span>✅</span><span>连接成功！仓库：${data.full_name}（${data.private ? '私有' : '公开'}）</span>`;
+          showToast('连接成功', 'success');
+        } else {
+          const err = await res.json();
+          statusDiv.className = 'status-msg error';
+          statusDiv.innerHTML = `<span>❌</span><span>连接失败：${err.message || '未知错误'}</span>`;
+          showToast('连接失败', 'error');
+        }
+      } catch (e) {
+        statusDiv.className = 'status-msg error';
+        statusDiv.innerHTML = `<span>❌</span><span>网络错误：${e.message}</span>`;
+        showToast('网络错误', 'error');
+      } finally {
+        statusDiv.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '🔗 测试连接';
+      }
+    }
+
+    function toggleTokenVisibility() {
+      const input = document.getElementById('settingsToken');
+      const btn = document.getElementById('toggleTokenBtn');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    function loadSettings() {
+      const settings = getSettings();
+      document.getElementById('settingsRepo').value = settings.repo;
+      document.getElementById('settingsToken').value = settings.token;
+    }
 
     // ==================== Toast ====================
     function showToast(message, type = 'info') {
@@ -1164,12 +1330,13 @@
       `;
 
       try {
-        // Commit resume JSON to repo to trigger GitHub Actions
-        const GITHUB_REPO = window.GITHUB_REPO || '';
-        const GITHUB_TOKEN = window.GITHUB_TOKEN || '';
+        // 从 localStorage 读取配置
+        const settings = getSettings();
+        const GITHUB_REPO = settings.repo;
+        const GITHUB_TOKEN = settings.token;
 
         if (!GITHUB_REPO || !GITHUB_TOKEN) {
-          throw new Error('未配置 GitHub 仓库信息，请使用下载 ZIP 方式');
+          throw new Error('请先在设置页面配置 GitHub 仓库和 Token');
         }
 
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -1220,8 +1387,9 @@
     }
 
     async function pollForResult(timestamp, name) {
-      const GITHUB_REPO = window.GITHUB_REPO || '';
-      const GITHUB_TOKEN = window.GITHUB_TOKEN || '';
+      const settings = getSettings();
+      const GITHUB_REPO = settings.repo;
+      const GITHUB_TOKEN = settings.token;
       if (!GITHUB_REPO || !GITHUB_TOKEN) return;
 
       const maxAttempts = 30;
@@ -1472,15 +1640,14 @@
     }
 
     // ==================== Config Loading ====================
-    // config.js 会设置 window.GITHUB_REPO 和 window.GITHUB_TOKEN
-
     // ==================== Init ====================
     document.addEventListener('DOMContentLoaded', () => {
-      // Add initial empty fields
+      // 加载保存的设置
+      loadSettings();
+      // 添加初始空字段
       addEducation();
       addSkill();
     });
   </script>
-  <script src="config.js"></script>
 </body>
 </html>
