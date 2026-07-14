@@ -254,23 +254,21 @@ jobs:
           echo "email_sent=true" >> $GITHUB_OUTPUT
           echo "target_email=$TARGET_EMAIL" >> $GITHUB_OUTPUT
 
-      - name: 移动已处理的文件
+      - name: 清理已处理的文件
         if: github.event.inputs.resume_json == ''
         run: |
           RESUME_FILE="${{ steps.find-resume.outputs.resume_file }}"
           if [ -f "$RESUME_FILE" ]; then
-            mkdir -p processed
-            mv "$RESUME_FILE" processed/
+            rm "$RESUME_FILE"
+            echo "✅ 已删除处理文件: $RESUME_FILE"
           fi
 
       - name: 提交处理结果
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -d "processed" ]; then
-            git add processed/ pending/ 2>/dev/null || true
-            git diff --staged --quiet || git commit -m "chore: 移动已处理的简历文件到 processed/"
-          fi
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: 清理已处理的简历文件"
           git push || true
 
       - name: 生成摘要
