@@ -43,12 +43,22 @@ jobs:
             echo '${{ github.event.inputs.resume_json }}' > /tmp/resume_input.json
             echo "resume_file=/tmp/resume_input.json" >> $GITHUB_OUTPUT
           else
-            LATEST=$(ls -t pending/*.json 2>/dev/null | head -n1)
-            if [ -z "$LATEST" ]; then
-              echo "❌ 未找到待处理的简历文件"
-              exit 1
+            # 只查找本次 push 新增的文件
+            # 使用 git diff 获取新增的 pending/*.json 文件
+            NEW_FILES=$(git diff --name-only --diff-filter=A HEAD~1 HEAD -- 'pending/*.json' 2>/dev/null || echo "")
+            if [ -z "$NEW_FILES" ]; then
+              # 如果没有新增文件，fallback 到最新的
+              LATEST=$(ls -t pending/*.json 2>/dev/null | head -n1)
+              if [ -z "$LATEST" ]; then
+                echo "❌ 未找到待处理的简历文件"
+                exit 1
+              fi
+              echo "resume_file=$LATEST" >> $GITHUB_OUTPUT
+            else
+              # 取新增文件中的第一个（按时间排序）
+              NEWEST=$(echo "$NEW_FILES" | xargs ls -t 2>/dev/null | head -n1)
+              echo "resume_file=$NEWEST" >> $GITHUB_OUTPUT
             fi
-            echo "resume_file=$LATEST" >> $GITHUB_OUTPUT
           fi
 
       - name: 生成 LaTeX 文件
