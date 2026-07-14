@@ -244,7 +244,7 @@ def generate_resume_latex(data: dict, template_dir: str = "resume") -> str:
                 latex_lines.append('')
     
     if auto_one_page:
-        latex_lines.append('\vfill')  # 弹性间距
+        latex_lines.append('\\vfill')  # 弹性间距
     
     # 技能
     skills = data.get('skills', [])
